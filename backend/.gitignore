@@ -11,3 +11,9 @@ wheels/
 
 #env files
 .env
+
+#txt files
+.txt
+
+#not requirements.txt
+!requirements.txt
