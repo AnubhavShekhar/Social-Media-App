@@ -11,6 +11,7 @@ from app.models import Base, User, Post, Vote
 import logging
 from app.core.logging import configure_logging
 from app.middleware.logging_middleware import RequestLoggingMiddleware
+from scalar_fastapi import get_scalar_api_reference
 
 load_dotenv()
 
@@ -104,3 +105,7 @@ app.include_router(vote.router)
 async def root():
     logger.info("root_endpoint_called")
     return {'message': 'Welcome'}
+
+@app.get('/scalar', include_in_schema=False)
+async def scalar_html():
+    return get_scalar_api_reference(openapi_url=app.openapi_url, scalar_proxy_url="https://proxy.scalar.com",)

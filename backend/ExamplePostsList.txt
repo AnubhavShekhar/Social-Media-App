@@ -1,0 +1,128 @@
+[
+    {
+        "post": {
+            "id": "12d3a7c1-fead-4925-a8cd-e016df99bfae",
+            "title": "The day the earth stood still",
+            "content": "Keanu Reeves",
+            "created_at": "2026-04-18T04:13:17.552333+05:30"
+        },
+        "owner": {
+            "id": "28d81a89-50df-4692-88b0-517ff1517d0c",
+            "email": "ssk@gmail.com",
+            "created_at": "2026-04-18T02:26:44.713093+05:30"
+        },
+        "votes": 0
+    },
+    {
+        "post": {
+            "id": "8151b299-0681-4589-83d8-08ba7cf028f9",
+            "title": "Esquire",
+            "content": "Jung Chae Yeon",
+            "created_at": "2026-04-18T04:23:07.990562+05:30"
+        },
+        "owner": {
+            "id": "28d81a89-50df-4692-88b0-517ff1517d0c",
+            "email": "ssk@gmail.com",
+            "created_at": "2026-04-18T02:26:44.713093+05:30"
+        },
+        "votes": 1
+    },
+    {
+        "post": {
+            "id": "73dbcb8f-0674-453b-8e9e-3ace404519c7",
+            "title": "humint",
+            "content": "human intelligence",
+            "created_at": "2026-04-18T04:10:18.703450+05:30"
+        },
+        "owner": {
+            "id": "28d81a89-50df-4692-88b0-517ff1517d0c",
+            "email": "ssk@gmail.com",
+            "created_at": "2026-04-18T02:26:44.713093+05:30"
+        },
+        "votes": 0
+    },
+    {
+        "post": {
+            "id": "8324a5b6-c5cb-4ae6-9594-5d43f646937d",
+            "title": "Interstellar",
+            "content": "Black hole engine",
+            "created_at": "2026-04-18T01:37:36.905393+05:30"
+        },
+        "owner": {
+            "id": "e582d3c1-fbbb-4764-a0d6-163f698fe0ff",
+            "email": "buns@gmail.com",
+            "created_at": "2026-04-10T23:57:47.719960+05:30"
+        },
+        "votes": 1
+    },
+    {
+        "post": {
+            "id": "49919179-158b-496c-87e8-4f312835adfb",
+            "title": "Classroom of the Elite",
+            "content": "Ayanokojo Kiyotaka",
+            "created_at": "2026-04-18T02:28:29.284896+05:30"
+        },
+        "owner": {
+            "id": "28d81a89-50df-4692-88b0-517ff1517d0c",
+            "email": "ssk@gmail.com",
+            "created_at": "2026-04-18T02:26:44.713093+05:30"
+        },
+        "votes": 1
+    },
+    {
+        "post": {
+            "id": "278df49d-b85b-4c95-9e82-7a5b9aab6183",
+            "title": "Project Hail Mary",
+            "content": "amaze amaze amaze",
+            "created_at": "2026-04-18T02:39:32.396809+05:30"
+        },
+        "owner": {
+            "id": "e582d3c1-fbbb-4764-a0d6-163f698fe0ff",
+            "email": "buns@gmail.com",
+            "created_at": "2026-04-10T23:57:47.719960+05:30"
+        },
+        "votes": 2
+    },
+    {
+        "post": {
+            "id": "6e290fd5-f087-49fd-9a5e-ab9b65a7a134",
+            "title": "The Big Bang Theory",
+            "content": "Sheldon Cooper",
+            "created_at": "2026-04-18T05:20:08.337004+05:30"
+        },
+        "owner": {
+            "id": "28d81a89-50df-4692-88b0-517ff1517d0c",
+            "email": "ssk@gmail.com",
+            "created_at": "2026-04-18T02:26:44.713093+05:30"
+        },
+        "votes": 0
+    },
+    {
+        "post": {
+            "id": "ea5c448a-b630-4576-b58e-c5121b5f8478",
+            "title": "Hometown Cha Cha Cha",
+            "content": "Chief Hong",
+            "created_at": "2026-04-18T04:11:48.518157+05:30"
+        },
+        "owner": {
+            "id": "28d81a89-50df-4692-88b0-517ff1517d0c",
+            "email": "ssk@gmail.com",
+            "created_at": "2026-04-18T02:26:44.713093+05:30"
+        },
+        "votes": 0
+    },
+    {
+        "post": {
+            "id": "1c8c68af-5623-40b0-984f-2fe02a61a0ff",
+            "title": "Forbidden Fairytale",
+            "content": "Park Ji Hyun",
+            "created_at": "2026-04-18T04:03:54.737758+05:30"
+        },
+        "owner": {
+            "id": "e582d3c1-fbbb-4764-a0d6-163f698fe0ff",
+            "email": "buns@gmail.com",
+            "created_at": "2026-04-10T23:57:47.719960+05:30"
+        },
+        "votes": 0
+    }
+]

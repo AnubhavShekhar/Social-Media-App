@@ -12,5 +12,6 @@ dependencies = [
     "pwdlib[argon2]>=0.3.0",
     "pyjwt>=2.12.1",
     "rich>=14.3.3",
+    "scalar-fastapi>=1.8.2",
     "sqlalchemy>=2.0.49",
 ]
