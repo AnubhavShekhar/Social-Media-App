@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { type } from '../../../.next/dev/types/routes';
 
 export default function SignupPage() {
     const router = useRouter();
