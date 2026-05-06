@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { updatePost } from "@/lib/api";
 import type { Post, PostMutationResponse } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { type } from '../../../.next/dev/types/routes';
 
 // ------ Props -------------------------------------------------
 
@@ -26,27 +25,25 @@ interface EditPostDialogProps {
     onSaved : (updated: PostMutationResponse) => void;
 }
 
+// -- Inner from - only rendered when a post is actually selected ----
+
+interface EditFormProps {
+    post: Post;
+    onOpenChange: (open: boolean) => void;
+    onSaved: (updated: PostMutationResponse) => void;
+}
+
 // ------ Component ----------------------------------------------
 
-export default function EditPostDialog({
+function EditForm({
     post, 
-    open,
     onOpenChange,
     onSaved,
-}: Readonly<EditPostDialogProps>) {
-    const [title, setTitle] = useState("");
-    const [content, setContent] = useState("");
+}: Readonly<EditFormProps>) {
+    const [title, setTitle] = useState(post.post.title);
+    const [content, setContent] = useState(post.post.content);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-
-    // Pre-fill fields whenever the post being edited changes
-    useEffect(() => {
-        if (post) {
-            setTitle(post.post.title);
-            setContent(post.post.content);
-            setError("");
-        }
-    }, [post]);
 
     async function handleSubmit(e: React.SubmitEvent) {
         e.preventDefault();
@@ -69,6 +66,61 @@ export default function EditPostDialog({
     }
 
     return (
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="edit-title">Title</Label>
+                    <Input 
+                        id="edit-title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        required
+                        maxLength={200}
+                    />
+                </div>     
+
+                <div className="grid gap-2">
+                    <Label htmlFor="edit-content">Content</Label>
+                    <Textarea
+                        id="edit-content"
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        required
+                        rows={6}
+                        className="resize-none"
+                    />
+                </div>
+
+                {error && (
+                    <p className="text-sm text-destructive">{error}</p>
+                )}
+
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={loading}
+                    >
+                        Cancel
+                    </Button>
+                    <Button type="submit" disabled={loading}>
+                        {loading ? "Saving..." : "Save Changes"}
+                    </Button>
+                </DialogFooter>
+            </form> 
+
+    );
+}
+
+// ---- Outer dialog - controls open state and guards against null post ------
+
+export default function EditPostDialog({
+    post,
+    open,
+    onOpenChange,
+    onSaved,
+}: Readonly<EditPostDialogProps>) {
+    return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
@@ -78,49 +130,14 @@ export default function EditPostDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="edit-title">Title</Label>
-                        <Input 
-                            id="edit-title"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
-                            maxLength={200}
-                        />
-                    </div>     
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="edit-content">Content</Label>
-                        <Textarea
-                            id="edit-content"
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            required
-                            rows={6}
-                            className="resize-none"
-                        />
-                    </div>
-
-                    {error && (
-                        <p className="text-sm text-destructive">{error}</p>
-                    )}
-
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={loading}
-                        >
-                            Cancel
-                        </Button>
-                        <Button type="submit" disabled={loading}>
-                            {loading ? "Saving..." : "Save Changes"}
-                        </Button>
-                    </DialogFooter>
-                </form> 
-            </DialogContent>
+                {post && (
+                    <EditForm
+                        post={post}
+                        onOpenChange={onOpenChange}
+                        onSaved={onSaved}
+                    />
+                )}
+           </DialogContent>
         </Dialog>
     );
 }
