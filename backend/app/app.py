@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from psycopg_pool import AsyncConnectionPool
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -94,8 +95,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.add_middleware(RequestLoggingMiddleware)
-
+#------ Routers ---------------------------------------------------
 app.include_router(posts.router)
 app.include_router(users.router)
 app.include_router(auth.router)
@@ -109,3 +109,16 @@ async def root():
 @app.get('/scalar', include_in_schema=False)
 async def scalar_html():
     return get_scalar_api_reference(openapi_url=app.openapi_url, scalar_proxy_url="https://proxy.scalar.com",)
+
+# ----- Custom middleware -----------------------------------------
+app.add_middleware(RequestLoggingMiddleware)
+
+# --- CORS --------------------------------------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
