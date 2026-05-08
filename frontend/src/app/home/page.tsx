@@ -6,6 +6,7 @@ import { getPosts } from "@/lib/api";
 import type { Post, PostMutationResponse } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import AppSidebar from "@/components/nav/sidebar";
 import PostCard from "@/components/posts/post-card";
 import EditPostDialog from "@/components/posts/edit-post-dialog";
@@ -112,67 +113,70 @@ export default function HomePage() {
     if (authLoading) return null;
 
     return (
-        <SidebarProvider>
-            <AppSidebar/>
-            <SidebarInset>
-                {/* Top bar */}
-                <header className="flex items-center gap-2 px-4 py-3 border-b border-border">
-                    <SidebarTrigger/>
-                    <Separator orientation="vertical" className="h-4"/>
-                    <span className="text-sm font-medium">Feed</span>
-                </header>
+        <TooltipProvider>
+            <SidebarProvider>
+                <AppSidebar/>
+                <SidebarInset>
+                    {/* Top bar */}
+                    <header className="flex items-center gap-2 px-4 py-3 border-b border-border">
+                        <SidebarTrigger/>
+                        <Separator orientation="vertical" className="h-4"/>
+                        <span className="text-sm font-medium">Feed</span>
+                    </header>
 
-                {/* Feed */}
-                <main className="flex flex-col gap-4 p-4 max-w-2x1 mx-auto w-full">
-                    {/* Loading skeletons */}
-                    {postsLoading && (
-                        <>
-                            <PostSkeleton />
-                            <PostSkeleton />
-                            <PostSkeleton /> 
-                        </>
-                    )}
+                    {/* Feed */}
+                    <main className="flex flex-col gap-4 p-4 max-w-2x1 mx-auto w-full">
+                        {/* Loading skeletons */}
+                        {postsLoading && (
+                            <>
+                                <PostSkeleton />
+                                <PostSkeleton />
+                                <PostSkeleton /> 
+                            </>
+                        )}
 
-                    {/* Error state */}
-                    {!postsLoading && error && (
-                        <div className="text-center py-12">
-                            <p className="text-sm text-destructive">{error}</p>
-                            <button 
-                                onClick={fetchPosts}
-                                className="mt-2 text-sm text-muted-foreground hover:text-foreground underline">
-                                    Try again
-                                </button>
-                        </div>
-                    )}
+                        {/* Error state */}
+                        {!postsLoading && error && (
+                            <div className="text-center py-12">
+                                <p className="text-sm text-destructive">{error}</p>
+                                <button 
+                                    onClick={fetchPosts}
+                                    className="mt-2 text-sm text-muted-foreground hover:text-foreground underline">
+                                        Try again
+                                    </button>
+                            </div>
+                        )}
 
-                    {/* Empty state */}
-                    {!postsLoading && !error && posts.length === 0 && (
-                        <div className="text-center py-12">
-                            <p className="text-sm text-muted-foreground">
-                                No posts yet. Be the first to post.
-                            </p>
-                        </div>
-                    )}
+                        {/* Empty state */}
+                        {!postsLoading && !error && posts.length === 0 && (
+                            <div className="text-center py-12">
+                                <p className="text-sm text-muted-foreground">
+                                    No posts yet. Be the first to post.
+                                </p>
+                            </div>
+                        )}
 
-                    {/* Posts */}
-                    {!postsLoading && !error && posts.map((post) => (
-                        <PostCard
-                            key={post.post.id}
-                            post={post}
-                            onEdit={handleEdit}
-                            onDeleted={handleDeleted}
-                        />
-                    ))}
-                </main>
-            </SidebarInset>
+                        {/* Posts */}
+                        {!postsLoading && !error && posts.map((post) => (
+                            <PostCard
+                                key={post.post.id}
+                                post={post}
+                                onEdit={handleEdit}
+                                onDeleted={handleDeleted}
+                            />
+                        ))}
+                    </main>
+                </SidebarInset>
 
-            {/* Edit dialog - lives outside the feed so it isn't unmounted on scroll */}
-            <EditPostDialog
-                post={editingPost}
-                open={editOpen}
-                onOpenChage={setEditOpen}
-                onSaved={handleSaved}
-            />
-        </SidebarProvider>
+                {/* Edit dialog - lives outside the feed so it isn't unmounted on scroll */}
+                <EditPostDialog
+                    post={editingPost}
+                    open={editOpen}
+                    onOpenChange={setEditOpen}
+                    onSaved={handleSaved}
+                />
+            </SidebarProvider>
+
+        </TooltipProvider>
     );
 }
