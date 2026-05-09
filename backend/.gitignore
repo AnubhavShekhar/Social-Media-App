@@ -17,3 +17,6 @@ wheels/
 
 #not requirements.txt
 !requirements.txt
+
+#not .env.example
+!.env.example
