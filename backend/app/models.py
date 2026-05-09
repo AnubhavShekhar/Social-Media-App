@@ -27,6 +27,7 @@ class Post(Base):
     content : Mapped[str] = mapped_column(Text, nullable=False)
     created_at : Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
     published: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    image_url : Mapped[str | None] = mapped_column(Text, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="posts")
 
