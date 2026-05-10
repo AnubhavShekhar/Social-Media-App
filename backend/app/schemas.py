@@ -1,11 +1,7 @@
-from unittest.mock import Base
-
 from pydantic import BaseModel, ConfigDict, Field, EmailStr
 from typing import Literal
 import uuid
 from datetime import datetime
-
-from uvicorn import Config
 
 class UserCreate(BaseModel):
     email: EmailStr 
@@ -35,6 +31,7 @@ class PostBase(BaseModel):
     content : str
     created_at : datetime
     published: bool
+    image_url: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -46,6 +43,7 @@ class PostsResponse(Post):
 
 class PostResponse(Post):
     created_at : datetime
+    image_url : str | None = None
     user_id : uuid.UUID
     owner: dict
 
