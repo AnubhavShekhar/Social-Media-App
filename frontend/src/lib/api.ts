@@ -95,9 +95,32 @@ export async function getPostsById(id: string) {
 export async function createPost(data: {
     title: string;
     content: string;
-    image_url?: string;
+    image?: File;
 }){
-    return request<PostMutationResponse>("/posts", { method: "POST", body: JSON.stringify(data) });
+    // Must use FormData - backend expects multipart/form-data
+    // Do Not set Content-Type manually - browser sets it with the correct boundary
+    const formData = new FormData();
+    formData.append("title", data.title);
+    formData.append("content", data.content);
+    if (data.image) {
+        formData.append("image", data.image);
+    }
+
+    const res = await fetch(`${BASE}/posts`, {
+        method: "POST",
+        headers: {
+            // Only the auth header
+            ...authHeaders(),
+        },
+        body: formData,
+    });
+
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({detail: "Request Failed"}));
+        throw new Error(err.detail ?? "Request Failed");
+    }
+
+    return res.json() as Promise<PostMutationResponse>; 
 }
 
 export async function updatePost(
