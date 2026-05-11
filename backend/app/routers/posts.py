@@ -1,10 +1,10 @@
-from email.policy import HTTP
+from ast import Tuple
 
-from fastapi import HTTPException, status, Response, Depends, Request, APIRouter
+from fastapi import HTTPException, status, Response, Depends, Request, APIRouter, UploadFile, File, Form
 from app.schemas import Post, PostResponse, PostWithVotes, PostsResponse
 import app.models as models
 from psycopg.rows import dict_row
-from typing import List, Optional
+from typing import List, Optional, Annotated, cast
 from app.dependencies import CurrentUser
 from app.database import DBConn, DBSession
 from app.utils import add_owner_info
@@ -12,10 +12,27 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from uuid import UUID
 import logging
+from pathlib import Path
+from imagekitio import ImageKit
+import tempfile
+import os
+from dotenv import load_dotenv
+import aiofiles.tempfile
+
+load_dotenv()
 
 logger = logging.getLogger("app.posts")
 
 router = APIRouter(prefix='/posts', tags=['Posts'])
+
+# ------- ImageKit client ------------------------------------------
+
+imagekit = ImageKit(
+    private_key=os.getenv("IMAGEKIT_PRIVATE_KEY"),
+)
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024 # 5MB
 
 @router.get('/', status_code=status.HTTP_200_OK, response_model=List[PostWithVotes])
 async def get_posts(conn: DBConn, session: DBSession, limit: int = 15, skip: int = 0, search : Optional[str] = ''):
@@ -109,25 +126,127 @@ async def get_post(id: UUID, conn: DBConn, session : DBSession):
         logger.exception("get_post_failed post_id=%s", id)
         raise 
 
+async def _upload_post_image(image: UploadFile, user_id: UUID) -> tuple[str, str]:
+    filename = image.filename
+    if not filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Image filename is missing",
+        )
+    
+    logger.info(
+        "image_upload_started user_id=%s filename=%s content_type=%s",
+        user_id, filename, image.content_type,
+    )
+
+    if image.content_type not in ALLOWED_IMAGE_TYPES:
+        logger.warning(
+            "image_upload_invalid_type user_id=%s content_type=%s",
+            user_id, image.content_type,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file type. Allowed : jpeg, png, webp, gif",
+        )
+
+    contents = await image.read()
+    file_size = len(contents)
+    logger.info("image_upload_read user_id=%s size_bytes=%s", user_id, file_size)
+
+    if file_size > MAX_IMAGE_SIZE_BYTES:
+        logger.warning("image_upload_too_large user_id=%s size_bytes=%s", user_id, file_size)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Image must be under 5MB",
+        )
+
+    temp_file_path: Path | None = None
+
+    try:
+        suffix = Path(filename).suffix
+
+        async with aiofiles.tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            await tmp.write(contents)
+            temp_file_path = Path(cast(str, tmp.name))
+
+        logger.info("image_temp_file_created user_id=%s path=%s", user_id, temp_file_path)
+
+        upload_result = imagekit.files.upload(
+            file=temp_file_path,
+            file_name=filename,
+            folder="/posts",
+            tags=["post-image"],
+        )
+
+        uploaded_url, uploaded_fileid = upload_result.url, upload_result.file_id
+        if not uploaded_url:
+            logger.error("imagekit_upload_missing_url user_id=%s filename=%s", user_id, filename)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Image upload failed"
+            )
+        if not uploaded_fileid:
+            logger.error("imagekit_upload_missing_fileid user_id=%s filename=%s", user_id, filename)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Image upload failed"
+            )
+
+        logger.info("imagekit_upload_succeeded user_id=%s url=%s", user_id, uploaded_url)
+        return uploaded_url, uploaded_fileid
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logger.exception("imagekit_upload_failed user_id=%s filename=%s", user_id, filename)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Image upload failed",
+        )
+
+    finally:
+        if temp_file_path and os.path.exists(temp_file_path):
+            os.unlink(temp_file_path)
+            logger.info("image_temp_file_deleted user_id=%s path=%s", user_id, temp_file_path)
 
 @router.post('/', status_code=status.HTTP_201_CREATED, response_model=PostResponse)
-async def create_post(post: Post, conn: DBConn, user: CurrentUser):
+async def create_post(
+    conn: DBConn,
+    user: CurrentUser,
+    title: Annotated[str, Form(...)],
+    content: Annotated[str, Form(...)],
+    published: Annotated[bool, Form()] = True,
+    image: Annotated[UploadFile | None, File()] = None,
+):
     logger.info("create_post_requested user_id=%s", user['id'])
+
+    image_url = None
+
+    #-------- Upload image to ImageKit if provided --------------------------
+    if image and image.filename:
+        image_url, image_fileid = await _upload_post_image(image, user['id'])
+
+    else:
+        logger.info("create_post_no_image user_id=%s", user['id'])
+
+    #----- Insert post into DB --------------------------------------
+
     try:
         async with conn.cursor(row_factory=dict_row) as cur:
             await cur.execute("""--sql
                                 INSERT INTO posts
-                                (title, content, published, user_id) 
-                                VALUES (%s, %s, %s, %s)
+                                (title, content, published, user_id, image_url, image_fileid) 
+                                VALUES (%s, %s, %s, %s, %s, %s)
                                 RETURNING *
-                                """, (post.title, post.content, post.published, user['id']),
+                                """, (title, content, published, user['id'], image_url, image_fileid),
                             )
             
             new_post = await cur.fetchone()
             await conn.commit()
             if new_post:
                 new_post = add_owner_info(new_post, user)
-                logger.info("create_post_succeeded user_id=%s post_id=%s", user['id'], new_post['id'])
+                logger.info("create_post_succeeded user_id=%s post_id=%s image_url=%s", user['id'], new_post['id'], image_url)
         
         return new_post
     
