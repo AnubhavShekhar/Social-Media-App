@@ -398,7 +398,7 @@ async def delete_post(id: UUID, conn: DBConn, user : CurrentUser):
     try:
         async with conn.cursor(row_factory=dict_row) as cur:
             await cur.execute("""--sql
-                            SELECT user_id FROM posts where id = %s
+                            SELECT user_id, image_fileid FROM posts where id = %s
                             """, (id, ))
             owner_query = await cur.fetchone()
 
@@ -427,6 +427,19 @@ async def delete_post(id: UUID, conn: DBConn, user : CurrentUser):
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"post with id : {id} not found",
                 )
+            
+            logger.info("delete_post_db_succeeded post_id=%s user_id=%s", id, user['id'])
+
+            # ----------- Delete image from ImageKit if present ----------------------
+            image_fileid = owner_query.get('image_fileid')
+            if image_fileid:
+                try: 
+                    imagekit.files.delete(image_fileid)
+                    logger.info("imagekit_delete_succeeded post_id=%s file_id=%s", id, image_fileid)
+                except Exception:
+                    # Log but don't fail the request - post is already deleted from DB
+                    # so we don't want to return an error to the client
+                    logger.exception("imagekit_delete_failed post_id=%s file_id=%s", id, image_fileid)
             
             logger.info("delete_post_succeeded post_id=%s user_id=%s", id, user['id'])
             return Response(status_code=status.HTTP_204_NO_CONTENT)
