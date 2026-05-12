@@ -165,7 +165,7 @@ export async function getMe() {
 }
 
 export async function deleteAccount(id: string) {
-    return request<void>(`users/${id}`, { method : "DELETE" });
+    return request<void>(`/users/${id}`, { method : "DELETE" });
 }
 
 export async function getUserPosts(userId: string) {
