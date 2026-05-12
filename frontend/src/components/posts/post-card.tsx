@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 // -------- Props -----------------------------------------------------
 
@@ -54,6 +55,9 @@ export default function PostCard ({ post, onEdit, onDeleted }: Readonly<PostCard
     //----- Delete state -------------------------------------
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
+
+    //---- Image orientation state -----------------------------
+    const [isPortrait, setIsPortrait] = useState(false);
 
     //----- Handlers -----------------------------------------
     async function handleVote() {
@@ -155,12 +159,25 @@ export default function PostCard ({ post, onEdit, onDeleted }: Readonly<PostCard
 
                     {/* Image- shown if present */}
                     {post.post.image_url && (
-                        <div className="mt-3 rounded-md overflow-hidden border border-border">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                        <div className={cn(
+                            "relative mt-3 rounded-md overflow-hidden border border-border",
+                            //Portrait images get a taller container,
+                            // landscape images get a shorter container
+                            isPortrait ? "h-[800px]" : "h-[600px]"
+                        )}
+                        style={{ minHeight: "160px" }}
+                        >
+                            <Image
                                 src={post.post.image_url}
                                 alt={post.post.title}
-                                className="w-full object-cover max-h-96"
+                                fill
+                                className="object-contain"
+                                sizes="(max-width: 672px) 100vw, 672px"
+                                onLoad={(e) => {
+                                    // Detect orientation once image loads
+                                    const img = e.currentTarget;
+                                    setIsPortrait(img.naturalHeight > img.naturalWidth);
+                                }}
                             />
                         </div>
                     )}
