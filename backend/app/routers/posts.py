@@ -1,7 +1,5 @@
-from ast import Tuple
-
 from fastapi import HTTPException, status, Response, Depends, Request, APIRouter, UploadFile, File, Form
-from app.schemas import Post, PostResponse, PostWithVotes, PostsResponse
+from app.schemas import Post, PostResponse, PostUpdate, PostWithVotes, PostsResponse
 import app.models as models
 from psycopg.rows import dict_row
 from typing import List, Optional, Annotated, cast
@@ -222,6 +220,7 @@ async def create_post(
     logger.info("create_post_requested user_id=%s", user['id'])
 
     image_url = None
+    image_fileid = None
 
     #-------- Upload image to ImageKit if provided --------------------------
     if image and image.filename:
@@ -316,7 +315,7 @@ async def update_post(id: UUID, post: Post, conn: DBConn, user : CurrentUser):
         raise
 
 @router.patch('/{id}', response_model=PostResponse)
-async def update_post_partially(id: UUID, post: Post, conn: DBConn, user : CurrentUser):
+async def update_post_partially(id: UUID, post: PostUpdate, conn: DBConn, user : CurrentUser):
     logger.info("patch_post_requested post_id=%s user_id=%s", id, user['id'])
 
     fields = []
