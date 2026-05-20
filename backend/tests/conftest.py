@@ -1,5 +1,3 @@
-from zlib import DEF_BUF_SIZE
-
 import pytest
 import pytest_asyncio
 import os
@@ -13,11 +11,19 @@ from app.database import get_db_conn, get_db_session
 from app.oauth2 import create_access_token
 from app.models import User, Post
 from app.utils import hash_password
+import sys
+import asyncio
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 #---------Load test environment ---------------------------------
 load_dotenv(".env.test", override=True)
 
 TEST_DATABASE_URL = os.getenv("DATABASE_URL")
+
+if TEST_DATABASE_URL is not None:
+    TEST_SA_URL = TEST_DATABASE_URL.replace("postgresql://", "postgresql+psycopg://")
 
 
 #-----------Session scoped pool ---------------------------------
@@ -31,8 +37,8 @@ async def test_pool():
 
     pool = AsyncConnectionPool(
         conninfo=TEST_DATABASE_URL,
-        min_size=1,
-        max_size=5,
+        min_size=2,
+        max_size=10,
         open=False,
     )
     await pool.open()
@@ -41,21 +47,45 @@ async def test_pool():
     await pool.close()
 
 @pytest_asyncio.fixture(scope="session")
-async def test_session_factory(test_pool):
-    """SqlAlchemy session factory bound to the test pool"""
+async def test_engine():
+    """Seperate SQLAlchemy engine with its own connection pool"""
+    if TEST_SA_URL is None:
+        raise RuntimeError("DATABASE_URL is not set in .env.test")
+    
     engine = create_async_engine(
-        "postgresql+psycopg://",
+        TEST_SA_URL,
         poolclass=NullPool,
-        async_creator=test_pool.getconn,
         echo=False,
     )
+    yield engine
+    await engine.dispose()
+
+@pytest_asyncio.fixture(scope="session")
+async def test_session_factory(test_engine):
+    """SqlAlchemy session factory using its own engine"""
     factory = async_sessionmaker(
-        bind=engine,
+        bind=test_engine,
         expire_on_commit=False,
         autoflush=False,
     )
     yield factory
-    await engine.dispose()
+
+# ── Table cleanup between tests ───────────────────────────────────────────────
+
+@pytest_asyncio.fixture(autouse=True)
+async def cleanup(test_pool):
+    """
+    Truncates all tables after every test automatically.
+    autouse=True means this runs for every test without needing to request it.
+    Runs AFTER the test (yield comes first, cleanup after).
+    """
+    yield
+    async with test_pool.connection() as conn:
+        await conn.execute("""
+            TRUNCATE TABLE votes, posts, users
+            RESTART IDENTITY CASCADE
+        """)
+        await conn.commit()
 
 #-----Per-test fixtures----------------------------------------------
 
@@ -63,11 +93,7 @@ async def test_session_factory(test_pool):
 async def db_conn(test_pool):
     """Per-test psycopg connection with automatic rollback"""
     async with test_pool.connection() as conn:
-        await conn.set_autocommit(False)
-        try:
-            yield conn
-        finally:
-            await conn.rollback()
+        yield conn
 
 @pytest_asyncio.fixture
 async def db_session(test_session_factory):
@@ -76,7 +102,7 @@ async def db_session(test_session_factory):
         try:
             yield session
         finally:
-            await session.rollback()
+            await session.close()
 
 #------HTTP Client---------------------------------------------------
 
@@ -153,9 +179,9 @@ async def auth_client(client, token):
     return client
 
 @pytest_asyncio.fixture
-async def auth_client_2(client, token_2):
+async def auth_client_2(client, token2):
     """AsyncClient pre-configured with auth headers for test_user_2"""
-    client.headers.update({"Authorization" : f"Bearer {token_2}"})
+    client.headers.update({"Authorization" : f"Bearer {token2}"})
     return client
 
 # -------- Test post -----------------------------------------------
