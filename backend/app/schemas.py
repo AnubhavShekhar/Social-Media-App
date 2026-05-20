@@ -35,6 +35,10 @@ class PostBase(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class PostUpdate(BaseModel):
+    title: str | None = None
+    content: str | None = None
+    published: bool | None = None
 class PostsResponse(Post):
     created_at : datetime
     owner_id : uuid.UUID
