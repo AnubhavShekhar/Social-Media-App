@@ -16,15 +16,16 @@ from app.models import Base
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-load_dotenv(dotenv_path='D:/Programming/Python/Projects/FASTAPI/Social Media App/backend/app/.env')
+if not os.getenv("DATABASE_URL"):
+    load_dotenv(dotenv_path='D:/Programming/Python/Projects/FASTAPI/Social Media App/backend/app/.env')
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-DATABASE_URL = os.getenv("ALEMBIC_DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("ALEMBIC_DATABASE_URL")
 if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is not set")
+    raise RuntimeError("Neither DATABASE_URL nor ALEMBIC_DATABASE_URL is set")
 
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 # Interpret the config file for Python logging.
