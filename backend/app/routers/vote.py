@@ -58,7 +58,7 @@ async def vote(vote: schemas.Vote, session: DBSession, user: CurrentUser):
             if not existing_vote:
                 logger.warning("vote_missing_for_delete user_id=%s post_id=%s", user['id'], vote.post_id)
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
+                    status_code=status.HTTP_409_CONFLICT,
                     detail="Vote does not exist"
                 )
 
