@@ -18,23 +18,6 @@ from types import SimpleNamespace
 from factories import PostFactory
 from httpx import AsyncClient
 
-# ------ Module level async helper -------------------------------------
-
-async def persist_post(db_session, **kwargs):
-    """
-    Build a Post via PostFactory, persist it, and return the saved instance.
- 
-    Any keyword arg overrides the factory default, e.g.:
-        persist_post(db_session, title="Custom", published=False)
- 
-    `db_session` is the per-test SQLAlchemy AsyncSession from conftest.
-    We commit so the post is visible to route handlers on their own connections.
-    """
-    post = PostFactory.build(**kwargs)
-    db_session.add(post)
-    await db_session.commit()
-    await db_session.refresh(post)
-    return post
 
 # ---------- Helpers -------------------------------------------------------
 def form(
@@ -59,13 +42,13 @@ class TestGetPosts:
         assert response.status_code == 200
         assert response.json() == []
 
-    async def test_returns_posts_with_correct_shape(self, client: AsyncClient, db_session, test_user):
+    async def test_returns_posts_with_correct_shape(self, client: AsyncClient, persist_post):
         """
         Creates two posts via the factory and checks that GET /posts returns
         them both with the full PostWithVotes shape.
         """
-        await persist_post(db_session, user_id=test_user.id, title="First Post")
-        await persist_post(db_session, user_id = test_user.id, title="Second Post")
+        await persist_post(title="First Post")
+        await persist_post(title="Second Post")
 
         response = await client.get("/posts/")
         assert response.status_code == 200
@@ -87,11 +70,9 @@ class TestGetPosts:
 #---------GET /posts/{id} ------------------------------------------------
 
 class TestGetPost:
-    async def test_returns_correct_post(self, client, db_session, test_user):
+    async def test_returns_correct_post(self, client, persist_post):
         """Fetching by ID returns the right post with correct field values."""
         post = await persist_post(
-            db_session,
-            user_id=test_user.id,
             title="Specific Post",
             content="Specific content",
         )
@@ -176,11 +157,9 @@ class TestCreatePost:
 #-------PATCH /posts/{id} -----------------------------------------------------------
 
 class TestUpdatePost:
-    async def test_owner_can_update_own_post(self, auth_client, db_session, test_user):
+    async def test_owner_can_update_own_post(self, auth_client, persist_post):
         """Owner can change title and content via PATCH."""
         post = await persist_post(
-            db_session,
-            user_id=test_user.id,
             title="Original Title",
             content="Original content",
         )
@@ -196,12 +175,12 @@ class TestUpdatePost:
         assert data["content"] == "Updated content"
         assert data["id"] == str(post.id)
  
-    async def test_non_owner_cannot_update_post(self, auth_client_2, db_session, test_user):
+    async def test_non_owner_cannot_update_post(self, auth_client_2, persist_post):
         """
         test_user_2 (auth_client_2) cannot update a post owned by test_user.
         403 Forbidden, not 404 — the post exists, the user just can't touch it.
         """
-        post = await persist_post(db_session, user_id=test_user.id)
+        post = await persist_post()
  
         response = await auth_client_2.patch(
             f"/posts/{post.id}",
@@ -219,22 +198,20 @@ class TestUpdatePost:
         print(response.json())
         assert response.status_code == 404
  
-    async def test_unauthenticated_user_update_post(self, client, db_session, test_user):
+    async def test_unauthenticated_user_update_post(self, client, persist_post):
         """No token → 401 before ownership is even checked."""
-        post = await persist_post(db_session, user_id=test_user.id)
+        post = await persist_post()
         response = await client.patch(f"/posts/{post.id}", json={"title": "No Auth"})
         assert response.status_code == 401
  
     async def test_partial_update_preserves_other_fields(
-        self, auth_client, db_session, test_user
+        self, auth_client, persist_post 
     ):
         """
         Sending only `title` in a PATCH should not wipe out `content`.
         Verifies the route does a true partial update, not a full replace.
         """
         post = await persist_post(
-            db_session,
-            user_id=test_user.id,
             title="Original",
             content="Do not erase me",
         )
@@ -250,12 +227,12 @@ class TestUpdatePost:
 #-----DELETE /posts/{id} -----------------------------------------------------
 
 class TestDeletePost:
-    async def test_owner_can_delete_own_post(self, auth_client, db_session, test_user):
+    async def test_owner_can_delete_own_post(self, auth_client, persist_post):
         """
         Owner deletes their post → 204 No Content.
         Follow-up GET confirms the row is actually gone.
         """
-        post = await persist_post(db_session, user_id=test_user.id)
+        post = await persist_post()
  
         response = await auth_client.delete(f"/posts/{post.id}")
         assert response.status_code == 204
@@ -263,9 +240,9 @@ class TestDeletePost:
         get_response = await auth_client.get(f"/posts/{post.id}")
         assert get_response.status_code == 404
  
-    async def test_non_owner_cannot_delete_post(self, auth_client_2, db_session, test_user):
+    async def test_non_owner_cannot_delete_post(self, auth_client_2, persist_post):
         """test_user_2 cannot delete test_user's post."""
-        post = await persist_post(db_session, user_id=test_user.id)
+        post = await persist_post()
         response = await auth_client_2.delete(f"/posts/{post.id}")
         assert response.status_code == 403
  
@@ -274,14 +251,14 @@ class TestDeletePost:
         response = await auth_client.delete(f"/posts/{uuid.uuid4()}")
         assert response.status_code == 404
  
-    async def test_unauthenticated_user_delete_post(self, client, db_session, test_user):
+    async def test_unauthenticated_user_delete_post(self, client, persist_post):
         """No token → 401."""
-        post = await persist_post(db_session, user_id=test_user.id)
+        post = await persist_post()
         response = await client.delete(f"/posts/{post.id}")
         assert response.status_code == 401
  
     async def test_delete_post_with_image_removes_imagekit_file(
-        self, auth_client, db_session, test_user
+        self, auth_client, persist_post 
     ):
         """
         When deleting a post that has an image, the router must call
@@ -292,8 +269,6 @@ class TestDeletePost:
         This is cleaner than also mocking an upload just to set up state.
         """
         post = await persist_post(
-            db_session,
-            user_id=test_user.id,
             image_url="https://ik.imagekit.io/test/photo.jpg",
             image_fileid="ik_real_file_id_789",
         )
@@ -308,15 +283,13 @@ class TestDeletePost:
         mock_delete.assert_called_once_with("ik_real_file_id_789")
  
     async def test_delete_post_without_image_does_not_call_imagekit(
-        self, auth_client, db_session, test_user
+        self, auth_client, persist_post 
     ):
         """
         Deleting a text-only post (no image_fileid) must NOT call
         imagekit.files.delete — guards against calling delete with None.
         """
         post = await persist_post(
-            db_session,
-            user_id=test_user.id,
             image_url=None,
             image_fileid=None,
         )

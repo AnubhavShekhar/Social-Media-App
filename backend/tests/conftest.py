@@ -12,6 +12,7 @@ from app.models import User, Post
 from app.utils import hash_password
 import sys
 import asyncio
+from factories import PostFactory
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -198,3 +199,20 @@ async def test_post(db_session, test_user):
     await db_session.commit()
     await db_session.refresh(post)
     return post
+
+@pytest_asyncio.fixture
+async def persist_post(db_session, test_user):
+    """
+    Returns an async callable that builds and persists a Post via PostFactory
+
+    Defaults user_id to test_user.id - overrie any field via kwargs
+    """
+    async def _persist(**kwargs):
+        kwargs.setdefault("user_id", test_user.id)
+        post = PostFactory.build(**kwargs)
+        db_session.add(post)
+        await db_session.commit()
+        await db_session.refresh(post)
+        return post
+    
+    return _persist
