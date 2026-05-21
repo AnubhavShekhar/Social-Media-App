@@ -1,6 +1,6 @@
 import pytest_asyncio
 import os
-from httpx import AsyncClient, ASGITransport
+from httpx import AsyncClient, ASGITransport, head
 from psycopg_pool import AsyncConnectionPool
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.pool import NullPool
@@ -107,8 +107,7 @@ async def db_session(test_session_factory):
 #------HTTP Client---------------------------------------------------
 
 @pytest_asyncio.fixture
-async def client(db_conn, db_session, test_pool, test_session_factory):
-    """AsyncClient with test database dependencies injected"""
+async def app_with_test_deps(db_conn, db_session, test_pool, test_session_factory):
 
     async def override_get_db_conn():
         yield db_conn
@@ -122,13 +121,18 @@ async def client(db_conn, db_session, test_pool, test_session_factory):
     app.state.db_pool = test_pool
     app.state.session_factory = test_session_factory
 
+    try:
+        yield app
+    finally:
+        app.dependency_overrides.clear()
+
+@pytest_asyncio.fixture
+async def client(app_with_test_deps):
     async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
+        transport=ASGITransport(app=app_with_test_deps),
+        base_url="https://test",
     ) as ac:
         yield ac
-
-    app.dependency_overrides.clear()
 
 #-----Test users ----------------------------------------------------
 
@@ -173,16 +177,24 @@ async def token2(test_user_2):
 #-------- Authenticated clients ------------------------------------
 
 @pytest_asyncio.fixture
-async def auth_client(client, token):
+async def auth_client(app_with_test_deps, token):
     """AsyncClient pre-configured with auth headers for test_user"""
-    client.headers.update({"Authorization": f"Bearer {token}"})
-    return client
+    async with AsyncClient(
+        transport=ASGITransport(app=app_with_test_deps),
+        base_url="http://test",
+        headers={"Authorization" : f"Bearer {token}"}
+    ) as ac:
+        yield ac
 
 @pytest_asyncio.fixture
-async def auth_client_2(client, token2):
+async def auth_client_2(app_with_test_deps, token2):
     """AsyncClient pre-configured with auth headers for test_user_2"""
-    client.headers.update({"Authorization" : f"Bearer {token2}"})
-    return client
+    async with AsyncClient(
+        transport=ASGITransport(app=app_with_test_deps),
+        base_url="http://test",
+        headers={"Authorization" : f"Bearer {token2}"}
+    ) as ac:
+        yield ac
 
 # -------- Test post -----------------------------------------------
 
