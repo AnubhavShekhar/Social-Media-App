@@ -27,6 +27,9 @@ DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("ALEMBIC_DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("Neither DATABASE_URL nor ALEMBIC_DATABASE_URL is set")
 
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
