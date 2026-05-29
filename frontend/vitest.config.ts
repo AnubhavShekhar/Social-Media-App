@@ -14,7 +14,6 @@ export default defineConfig({
 
         // Allows using describe/it/expect without importing them in every file
         globals: true,
-
     },
     resolve:{
         alias: {
