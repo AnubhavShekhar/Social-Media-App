@@ -1,8 +1,5 @@
 packages:
 - frontend
-ignoredBuiltDependencies:
-  - sharp
-  - unrs-resolver
 onlyBuiltDependencies:
   - msw
   - sharp
