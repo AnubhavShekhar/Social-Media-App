@@ -40,8 +40,5 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.7"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": ["msw", "sharp", "unrs-resolver"]
   }
 }
