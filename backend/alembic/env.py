@@ -16,8 +16,10 @@ from app.models import Base
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-if not os.getenv("DATABASE_URL"):
-    load_dotenv(dotenv_path='D:/Programming/Python/Projects/FASTAPI/Social Media App/backend/app/.env')
+# if not os.getenv("DATABASE_URL"):
+#     load_dotenv(dotenv_path='D:/Programming/Python/Projects/FASTAPI/Social Media App/backend/app/.env')
+
+load_dotenv()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
