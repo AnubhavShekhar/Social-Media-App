@@ -32,7 +32,7 @@ imagekit = ImageKit(
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024 # 5MB
 
-@router.get('/', status_code=status.HTTP_200_OK, response_model=List[PostWithVotes])
+@router.get('', status_code=status.HTTP_200_OK, response_model=List[PostWithVotes])
 async def get_posts(conn: DBConn, session: DBSession, limit: int = 15, skip: int = 0, search : Optional[str] = ''):
     # async with conn.cursor(row_factory=dict_row) as cur:
     #     pattern = f"%{search}%" if search else "%"
@@ -208,7 +208,7 @@ async def _upload_post_image(image: UploadFile, user_id: UUID) -> tuple[str, str
             os.unlink(temp_file_path)
             logger.info("image_temp_file_deleted user_id=%s path=%s", user_id, temp_file_path)
 
-@router.post('/', status_code=status.HTTP_201_CREATED, response_model=PostResponse)
+@router.post('', status_code=status.HTTP_201_CREATED, response_model=PostResponse)
 async def create_post(
     conn: DBConn,
     user: CurrentUser,

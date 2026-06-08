@@ -13,7 +13,7 @@ router = APIRouter(prefix='/login', tags=['Login'])
 
 DUMMY_HASH = hash_password('dummypassword')
 
-@router.post('/', status_code=status.HTTP_200_OK)
+@router.post('', status_code=status.HTTP_200_OK)
 async def login(user_credentials: Annotated[OAuth2PasswordRequestForm, Depends()], conn: DBConn):
     logger.info("login_requested email=%s", user_credentials.username)
     try:

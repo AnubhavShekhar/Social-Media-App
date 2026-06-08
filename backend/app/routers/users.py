@@ -19,7 +19,7 @@ logger = logging.getLogger("app.users")
 router = APIRouter(prefix='/users', tags=['Users'])
 
 
-@router.post('/', status_code=status.HTTP_201_CREATED, response_model=UserResponse)
+@router.post('', status_code=status.HTTP_201_CREATED, response_model=UserResponse)
 async def create_user(user: UserCreate, conn: DBConn):
     logger.info("create_user_requested email=%s", user.email)
     hashed_password = hash_password(user.password)

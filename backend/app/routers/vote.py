@@ -10,7 +10,7 @@ logger = logging.getLogger("app.vote")
 router = APIRouter(prefix='/vote', tags=['Vote'])
 
 
-@router.post('/', status_code=status.HTTP_201_CREATED)
+@router.post('', status_code=status.HTTP_201_CREATED)
 async def vote(vote: schemas.Vote, session: DBSession, user: CurrentUser):
     logger.info("vote_requested user_id=%s post_id=%s dir=%s", user['id'], vote.post_id, vote.dir)
 
