@@ -116,7 +116,7 @@ app.add_middleware(RequestLoggingMiddleware)
 # --- CORS --------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://social-media-app-frontend-production.up.railway.app/"],
+    allow_origins=["http://localhost:3000", "https://social-media-app-frontend-production.up.railway.app/"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
