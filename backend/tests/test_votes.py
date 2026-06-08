@@ -14,7 +14,7 @@ from httpx import AsyncClient
 
 async def cast_vote(client, post_id, direction: int):
     """Thin wrapper so tests stay readable"""
-    return await client.post("/vote/", json={
+    return await client.post("/vote", json={
         "post_id": str(post_id),
         "dir": direction,
     })

@@ -38,7 +38,7 @@ def form(
 class TestGetPosts:
     async def test_returns_empty_list_when_no_posts(self, client: AsyncClient):
         """Feed is empty before any posts are created"""
-        response = await client.get("/posts/")
+        response = await client.get("/posts")
         assert response.status_code == 200
         assert response.json() == []
 
@@ -50,7 +50,7 @@ class TestGetPosts:
         await persist_post(title="First Post")
         await persist_post(title="Second Post")
 
-        response = await client.get("/posts/")
+        response = await client.get("/posts")
         assert response.status_code == 200
 
         data = response.json()
@@ -101,7 +101,7 @@ class TestCreatePost:
         """
 
         payload = form(title="My first post", content="Hello world")
-        response = await auth_client.post("/posts/", data=payload)
+        response = await auth_client.post("/posts", data=payload)
         assert response.status_code == 201
 
         data = response.json()
@@ -115,7 +115,7 @@ class TestCreatePost:
 
     async def test_unauthenticated_user_cannot_create_post(self, client: AsyncClient):
         """Unauthenticated user returns 401"""
-        response = await client.post("/posts/", data=form())
+        response = await client.post("/posts", data=form())
         assert response.status_code == 401
 
     async def test_create_post_with_image(self, auth_client: AsyncClient):
@@ -135,7 +135,7 @@ class TestCreatePost:
 
         with patch("app.routers.posts.imagekit.files.upload", new=Mock(return_value=mock_result)):
             response = await auth_client.post(
-                "/posts/",
+                "/posts",
                 data=form(title="Post with image"),
                 files={"image": ("photo.png", fake_bytes, "image/png")}
             )
@@ -148,8 +148,8 @@ class TestCreatePost:
         Creating two posts must produce two distinct UUIDs
         Regression guard against accidental ID reuse
         """
-        r1 = await auth_client.post("/posts/", data=form(title="Post A"))
-        r2 = await auth_client.post("/posts/", data=form(title="Post B"))
+        r1 = await auth_client.post("/posts", data=form(title="Post A"))
+        r2 = await auth_client.post("/posts", data=form(title="Post B"))
         assert r1.status_code == 201
         assert r2.status_code == 201
         assert r1.json()['id'] != r2.json()['id']
